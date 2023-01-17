@@ -15,11 +15,10 @@ from datetime import timedelta
 
 LIMIT = 100
 API_URL = f'https://www.reddit.com/r/wallpapers.json?limit={LIMIT}'
-BASE_DIR = '/opt/print'
 WAIT = 2
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-d', '--base-dir', type=str, help='Working directory [/opt/print]')
+parser.add_argument('-d', '--base-dir', type=str, help='Working directory [${HOME}/print]')
 parser.add_argument('-l', '--log-level', type=str, help='Logging level (info|warning|error) [info]')
 parser.add_argument('-p', '--purge', action='store_true', help='Purge downloaded wallpaper')
 parser.add_argument('-s', '--skip-print', action='store_true', help='Skip printing')
@@ -28,7 +27,7 @@ args = parser.parse_args()
 if args.base_dir:
     base_dir = args.base_dir
 else:
-    base_dir = BASE_DIR
+    base_dir = os.path.join(os.getenv('HOME'), 'print')
 
 if not os.path.isdir(base_dir):
     os.mkdir(base_dir)
