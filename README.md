@@ -5,8 +5,8 @@ This scrip
 * downloads a random wallpaper from reddit
 * prints the donwloaded wallpaper using `lp`
 
-``` text
-usage: print-reddit-wallpaper.py [-h] [-d BASE_DIR] [-l LOG_LEVEL] [-p] [-s]
+```
+usage: print-reddit-wallpaper.py [-h] [-d BASE_DIR] [-l LOG_LEVEL] [-p] [-s] [-m]
 
 options:
   -h, --help            show this help message and exit
@@ -16,4 +16,5 @@ options:
                         Logging level (info|warning|error) [info]
   -p, --purge           Purge downloaded wallpaper
   -s, --skip-print      Skip printing
+  -m, --memes           Using memes instead of wallpapers
 ```

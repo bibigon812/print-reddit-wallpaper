@@ -22,6 +22,7 @@ parser.add_argument('-d', '--base-dir', type=str, help='Working directory [${HOM
 parser.add_argument('-l', '--log-level', type=str, help='Logging level (info|warning|error) [info]')
 parser.add_argument('-p', '--purge', action='store_true', help='Purge downloaded wallpaper')
 parser.add_argument('-s', '--skip-print', action='store_true', help='Skip printing')
+parser.add_argument('-m', '--memes', action='store_true', help='Using memes instead of wallpapers')
 args = parser.parse_args()
 
 if args.base_dir:
@@ -31,10 +32,6 @@ else:
 
 if not os.path.isdir(base_dir):
     os.mkdir(base_dir)
-
-wallpaper_dir = os.path.join(base_dir, 'wallpappers')
-if not os.path.isdir(wallpaper_dir):
-    os.mkdir(wallpaper_dir)
 
 purge = args.purge
 skip_print = args.skip_print
@@ -52,19 +49,30 @@ if args.log_level in log_levels.keys():
 else:
     log_level = logging.INFO
 
+if args.memes:
+    CONTENT = 'meme'
+else:
+    CONTENT = 'wallpaper'
+
+API_URL = f'https://www.reddit.com/r/{CONTENT}s.json?limit={LIMIT}'
+
+content_dir = os.path.join(base_dir, f'{CONTENT}s')
+if not os.path.isdir(content_dir):
+    os.mkdir(content_dir)
+
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(log_level)
 
-cache_file = os.path.join(base_dir, 'cache', 'wallpapers.json')
+cache_file = os.path.join(base_dir, 'cache', f'{CONTENT}s.json')
 
-wallpapers_json = None
+content_json = None
 
 # Using cache
 if os.path.isfile(cache_file) and os.path.getctime(cache_file) >= datetime.timestamp(datetime.now() - timedelta(hours=1)):
     logger.info('using cache')
     with open(cache_file) as f:
-        wallpapers_json = json.load(f)
+        content_json = json.load(f)
 else:
     logger.warning("cache is stale or not found")
 
@@ -84,24 +92,24 @@ else:
         if not os.path.isdir(os.path.dirname(cache_file)):
             os.mkdir(os.path.dirname(cache_file))
 
-        wallpapers_json = r.json()
+        content_json = r.json()
         with open(cache_file, 'w') as f:
-            json.dump(wallpapers_json, f)
+            json.dump(content_json, f)
 
     else:
 
-        logger.error('reddit wallpapers api failed')
+        logger.error(f'reddit {CONTENT} api failed')
         logger.error(json.dumps(r.json()))
         os._exit(1)
 
-wallpaper_url = None
+content_url = None
 
-# Get rundom wallpaper url
-if wallpapers_json is not None:
-    logger.info('get random wallpaper url')
+# Get rundom content url
+if content_json is not None:
+    logger.info(f'get random {CONTENT} url')
     while True:
         num = int(random.random() * (LIMIT - 1))
-        data = wallpapers_json['data']['children'][num]['data']
+        data = content_json['data']['children'][num]['data']
 
         if 'is_video' in data and data['is_video']:
             continue
@@ -110,34 +118,34 @@ if wallpapers_json is not None:
         if data['url'].endswith('/'):
             continue
 
-        wallpaper_url = data['url']
+        content_url = data['url']
         break
 
 # Download image
-if wallpaper_url is not None:
+if content_url is not None:
 
-    wallpaper_filename = os.path.basename(urlparse(wallpaper_url).path)
+    content_filename = os.path.basename(urlparse(content_url).path)
 
-    logger.info(f'download wallpaper {wallpaper_url}')
-    r = requests.get(wallpaper_url, stream=True)
+    logger.info(f'download {CONTENT} {content_url}')
+    r = requests.get(content_url, stream=True)
 
     if r.status_code == 200:
-        wallpaper_path = os.path.join(wallpaper_dir, wallpaper_filename)
+        content_path = os.path.join(content_dir, content_filename)
         r.raw.decode_content = True
 
-        logger.info(f'save wallpaper {wallpaper_path}')
-        with open(wallpaper_path, 'wb') as f:
+        logger.info(f'save {CONTENT} {content_path}')
+        with open(content_path, 'wb') as f:
             shutil.copyfileobj(r.raw, f)
 
         if not skip_print:
-            logger.info(f'print wallpaper {wallpaper_path}')
-            subprocess.run(['lp', wallpaper_path], stdout=subprocess.PIPE, universal_newlines=True)
+            logger.info(f'print {CONTENT} {content_path}')
+            subprocess.run(['lp', content_path], stdout=subprocess.PIPE, universal_newlines=True)
         else:
-            logger.info(f'skip printing wallpaper {wallpaper_path}')
+            logger.info(f'skip printing {CONTENT} {content_path}')
 
         if purge:
-            logger.info(f'remove wallpapper {wallpaper_path}')
-            os.remove(wallpaper_path)
+            logger.info(f'remove {CONTENT} {content_path}')
+            os.remove(content_path)
 
     else:
-        logger.error('wallpaper downloading failed')
+        logger.error(f'{CONTENT} downloading failed')
